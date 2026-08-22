@@ -1,80 +1,72 @@
-# Balafon Plus — Gestion de grille & automatisation régie
+# BALAFON+ Guide — Gestion & diffusion de programmes TV
 
-Application de gestion de grille de programmes / automatisation régie pour
-**Balafon Media Group** (stage IAI Cameroun) : frontend React (Vite + Tailwind)
-et backend Django (DRF + Channels + PostgreSQL).
+Application React (Vite + Tailwind CSS + Lucide Icons + Framer Motion) de gestion
+et de diffusion de programmes TV pour **Balafon Media**, construite autour d'un
+diagramme de cas d'utilisation UML à 4 acteurs :
 
-## Démarrage rapide (mode démo, sans backend)
+| Acteur | Rôle dans l'application |
+|---|---|
+| **Directeur d'Antenne** | Crée les grilles EPG, importe les médias, modifie / supprime les grilles |
+| **Régie Diffusion** | Valide, modifie et supprime les grilles en temps réel |
+| **Téléspectateur** | Consulte le site/TV, sélectionne et affiche les grilles de programmes |
+| **Système de Planification / Stockage** | Backend simulé par `src/services/storage.ts` (persistance + temps réel) |
+
+## Démarrage
 
 ```bash
 npm install
-npm run dev          # ou npm run build && servir dist/
+npm run dev        # ou npm run build pour la production
 ```
 
-Sans `VITE_API_URL`, le frontend utilise un **adaptateur de démonstration** :
-contrat REST simulé, persistance `localStorage`, temps réel entre onglets via
-`BroadcastChannel`. Ouvrez `#/directeur` et `#/regie` dans deux onglets, validez
-une proposition côté directeur → la régie reçoit la notification instantanément.
+Aucun backend requis : le service de Stockage simulé persiste tout en
+`localStorage` et synchronise les onglets ouverts via `BroadcastChannel`
+(ouvrez `#/directeur` et `#/regie` côte à côte : une validation côté Régie se
+voit instantanément côté Directeur, Guide TV et portail).
 
 ### Comptes de démonstration (mot de passe `balafon237`)
 
-| Rôle | Email | Route |
+| Rôle | Email | Redirection |
 |---|---|---|
-| Administrateur | `admin@balafon.cm` | `#/admin`, `#/admin/grille` |
-| Directeur d'Antenne | `direction@balafon.cm` | `#/directeur` |
-| Régie de diffusion | `regie@balafon.cm` | `#/regie` (thème sombre) |
+| Directeur d'Antenne | `directeur@balafon.cm` | `#/directeur` |
+| Régie Diffusion | `regie@balafon.cm` | `#/regie` |
+| Téléspectateur | `telespectateur@balafon.cm` | `#/` (portail) |
 
-Public non connecté : `#/grille` (hero « en direct » + grille par jour).
+Le portail téléspectateur et le Guide TV sont publics (aucune connexion requise).
 
-## Démarrage avec le backend Django + PostgreSQL
+## Cas d'utilisation couverts
 
-```bash
-cd backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-python manage.py makemigrations accounts programmes
-python manage.py migrate
-python seed.py
-daphne -b 0.0.0.0 -p 8000 config.asgi:application
-```
+- **S'Authentifier** — `LoginPage` commune, redirection basée sur le rôle.
+- **Créer Grille EPG** — modale de création (grille vierge ou duplication d'une
+  grille existante sur la semaine choisie), statut initial *Brouillon*.
+- **Importer Media** — zone de drag & drop vers le Stockage simulé : upload,
+  transcodage animé, médiathèque consultable ; les affiches importées sont
+  réutilisables sur les émissions.
+- **Modifier / Supprimer Grille** — éditeur complet (émissions par jour,
+  détection de conflits horaires, couverture d'antenne), suppression avec
+  modale de confirmation → corbeille (restauration / destruction définitive).
+- **Valider Grille** — file de validation côté Régie avec aperçu des programmes,
+  alerte de conflits, modale de confirmation ; **rejeter** exige un motif.
+- **Consulter Site/TV · Sélectionner Grille · Afficher Grille** — portail
+  streaming (billboard, rail « En Direct Maintenant » avec progression, rails
+  Reprendre / Replays / Top 10) et Guide TV : sélecteur de grille + de jour,
+  timeline visuelle heure par heure avec ligne « maintenant ».
 
-Puis, à la racine :
+## Workflow simulé (états de grille)
 
-```bash
-cp .env.example .env
-# VITE_API_URL=http://localhost:8000
-# VITE_WS_URL=ws://localhost:8000/ws/grille/
-```
+`Brouillon` → `En attente de validation` → `Validée` (visible sur le portail et
+le Guide TV) — `Supprimée` (corbeille). Chaque action alimente le **journal
+temps réel** de la Régie.
 
-Détails dans [`backend/README.md`](backend/README.md).
+## Thème
 
-## Rôles et écrans
+Dark mode « OLED Black » (`#0A0A0A` / composants `#141414`), accent orange
+`#FF5722`, barre de navigation en glassmorphism, cartes avec zoom au survol et
+overlay d'informations, typographie Archivo (display) + Inter (corps) +
+JetBrains Mono (timecodes).
 
-| Rôle | Route | Peut faire |
-|---|---|---|
-| Public | `#/grille` | Consulter la grille validée (plateau « en direct », ticker, liste par jour) |
-| Administrateur | `#/admin` | Tableau de bord (stats + programme du jour + activité) |
-| Administrateur | `#/admin/grille` | Éditeur hebdomadaire 24 h (créer/modifier, conflits horaires, soumettre) |
-| Directeur d'Antenne | `#/directeur` | Comparer grille actuelle ↔ proposition, valider / rejeter (motif requis) |
-| Régie | `#/regie` | Monitoring temps réel, « à suivre », alertes, synchronisation vMix |
+## Backend Django + PostgreSQL (optionnel)
 
-## Identité visuelle
-
-Design system « Balafon Plus » : orange `#a43700` (primaire), bleu `#005faf`
-(secondaire), surfaces claires pour les écrans éditoriaux, thème control-room
-sombre (accent `#E65100`) réservé à la Régie. Typo display **Archivo**, corps
-**Inter**, timecodes **JetBrains Mono**, icônes Material Symbols.
-
-## Limites connues / pistes de suite
-
-- **Éditeur de grille** : création/modification par modale (pas de
-  glisser-déposer ni de redimensionnement souris pour l'instant).
-- **Diff Directeur** : rapprochement client par recoupement horaire (même
-  chaîne, créneau chevauchant). La détection de **suppression** exige un
-  historique backend (`remplace_emission_id` ou endpoint de diff dédié).
-- **vMix** : indicateurs calculés depuis la grille validée ; statut et journal
-  dépendent des 3 endpoints `/api/regie/vmix/*` (stubs dans le backend — à
-  brancher sur l'API vMix réelle). S'ils ne répondent pas, l'écran bascule sur
-  « vMix indisponible » sans afficher de fausses données.
-- **Gestion des accès (Technicien)** et **centre de notifications** : évoqués
-  dans les maquettes Stitch, pas construits ici.
+Un backend Django complet (DRF + Channels + PostgreSQL) livré dans
+[`backend/`](backend/README.md) reste disponible si vous souhaitez remplacer la
+simulation frontend par une vraie API (workflow d'émissions par rôle,
+WebSocket `ws/grille/`, seed PostgreSQL).

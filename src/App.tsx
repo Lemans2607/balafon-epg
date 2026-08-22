@@ -1,60 +1,53 @@
-import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
-import { AuthProvider, useAuth } from "./context/AuthContext";
-import { ToastProvider } from "./components/ui/kit";
-import { LoginPage, ROLE_HOME } from "./pages/LoginPage";
-import { AdminDashboard } from "./pages/admin/Dashboard";
-import { GrillePage } from "./pages/admin/GrillePage";
-import { DirecteurPage } from "./pages/directeur/DirecteurPage";
-import { RegieDashboard } from "./pages/regie/RegieDashboard";
-import { GrillePublique } from "./pages/public/GrillePublique";
-import type { Role } from "./utils/epgHelpers";
 import type { ReactNode } from "react";
+import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AppProvider, useApp } from "./context/AppContext";
+import { ToastProvider } from "./components/ui";
+import { LoginPage, ROLE_HOME } from "./pages/LoginPage";
+import { ViewerPortal } from "./pages/ViewerPortal";
+import { GuideTv } from "./pages/GuideTv";
+import { DirecteurDashboard } from "./pages/DirecteurDashboard";
+import { RegieDashboard } from "./pages/RegieDashboard";
+import type { Role } from "./types";
 
+/** Garde par rôle (cas d'utilisation « S'Authentifier » + redirection). */
 function Garde({ role, children }: { role: Role; children: ReactNode }) {
-  const { user } = useAuth();
+  const { user } = useApp();
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== role) return <Navigate to={ROLE_HOME[user.role]} replace />;
   return <>{children}</>;
 }
 
-function Accueil() {
-  const { user } = useAuth();
-  return <Navigate to={user ? ROLE_HOME[user.role] : "/grille"} replace />;
+/** Page de connexion — redirige si déjà authentifié. */
+function PageLogin() {
+  const { user } = useApp();
+  if (user) return <Navigate to={ROLE_HOME[user.role]} replace />;
+  return <LoginPage />;
 }
 
 export default function App() {
   return (
-    <AuthProvider>
+    <AppProvider>
       <ToastProvider>
         <HashRouter>
           <Routes>
-            <Route path="/" element={<Accueil />} />
-            <Route path="/grille" element={<GrillePublique />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route
-              path="/admin"
-              element={
-                <Garde role="admin">
-                  <AdminDashboard />
-                </Garde>
-              }
-            />
-            <Route
-              path="/admin/grille"
-              element={
-                <Garde role="admin">
-                  <GrillePage />
-                </Garde>
-              }
-            />
+            {/* Téléspectateur — Consulter Site/TV, Sélectionner & Afficher Grille */}
+            <Route path="/" element={<ViewerPortal />} />
+            <Route path="/guide" element={<GuideTv />} />
+
+            {/* S'Authentifier */}
+            <Route path="/login" element={<PageLogin />} />
+
+            {/* Directeur d'Antenne — Créer / Importer / Modifier / Supprimer Grille */}
             <Route
               path="/directeur"
               element={
                 <Garde role="directeur">
-                  <DirecteurPage />
+                  <DirecteurDashboard />
                 </Garde>
               }
             />
+
+            {/* Régie Diffusion — Valider / Modifier / Supprimer en temps réel */}
             <Route
               path="/regie"
               element={
@@ -63,10 +56,11 @@ export default function App() {
                 </Garde>
               }
             />
-            <Route path="*" element={<Navigate to="/grille" replace />} />
+
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </HashRouter>
       </ToastProvider>
-    </AuthProvider>
+    </AppProvider>
   );
 }

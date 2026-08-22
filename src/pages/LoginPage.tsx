@@ -1,264 +1,240 @@
 import { useState, type FormEvent } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { demandeAcces } from "../api";
-import { MODE_DEMO, USERS_DEMO } from "../api/comptes";
-import { ROLE_LABELS, type Role } from "../utils/epgHelpers";
-import { Icone, LogoBalafon, Spinner, TouchesBalafon } from "../components/ui/kit";
+import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  ArrowRight,
+  CalendarPlus,
+  Clapperboard,
+  Eye,
+  EyeOff,
+  HardDrive,
+  KeyRound,
+  Loader2,
+  Lock,
+  Mail,
+  Radio,
+  Tv,
+} from "lucide-react";
+import { useApp } from "../context/AppContext";
+import { DEMO_ACCOUNTS, DEMO_PASSWORD, IMG } from "../data/mock";
+import { Logo } from "../components/ui";
+import type { Role } from "../types";
 
 export const ROLE_HOME: Record<Role, string> = {
-  admin: "/admin",
   directeur: "/directeur",
   regie: "/regie",
+  telespectateur: "/",
 };
 
-const IMG_REGIE =
-  "https://image.qwenlm.ai/generated-images/f7e55388-64f2-49c0-a8d6-b5f448353a8d/_result.png";
+const ROLE_ICON: Record<Role, typeof Radio> = {
+  directeur: Clapperboard,
+  regie: Radio,
+  telespectateur: Tv,
+};
+
+const ROLE_TITRE: Record<Role, string> = {
+  directeur: "Directeur d'Antenne",
+  regie: "Régie Diffusion",
+  telespectateur: "Téléspectateur",
+};
 
 export function LoginPage() {
-  const { user, login } = useAuth();
+  const { login } = useApp();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"connexion" | "demande">("connexion");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [nom, setNom] = useState("");
+  const [voir, setVoir] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
-  const [chargement, setChargement] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [secousse, setSecousse] = useState(0);
-  const [demandeOk, setDemandeOk] = useState<string | null>(null);
 
-  if (user) return <Navigate to={ROLE_HOME[user.role]} replace />;
-
-  const soumettre = async (e: FormEvent) => {
-    e.preventDefault();
+  const entrer = async (e?: FormEvent, compte?: (typeof DEMO_ACCOUNTS)[number]) => {
+    e?.preventDefault();
+    const em = compte?.email ?? email;
+    const pw = compte?.password ?? password;
     setErreur(null);
-    setChargement(true);
+    setBusy(true);
     try {
-      const u = await login(email, password);
-      navigate(ROLE_HOME[u.role], { replace: true });
+      const user = await login(em, pw);
+      navigate(ROLE_HOME[user.role], { replace: true });
     } catch (err) {
       setErreur(err instanceof Error ? err.message : "Connexion impossible.");
       setSecousse((s) => s + 1);
     } finally {
-      setChargement(false);
-    }
-  };
-
-  const soumettreDemande = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!nom.trim() || !email.trim() || password.length < 6) {
-      setErreur(password.length < 6 && email.trim() && nom.trim() ? "Mot de passe : 6 caractères minimum." : "Tous les champs sont obligatoires.");
-      setSecousse((s) => s + 1);
-      return;
-    }
-    setErreur(null);
-    setChargement(true);
-    try {
-      const res = await demandeAcces(nom, email, password);
-      setDemandeOk(res.message);
-    } catch (err) {
-      setErreur(err instanceof Error ? err.message : "Envoi impossible, réessayez.");
-    } finally {
-      setChargement(false);
+      setBusy(false);
     }
   };
 
   const inputCls =
-    "w-full rounded-lg border border-ink-200 bg-paper pl-10 pr-3 py-2.5 text-[14px] font-medium text-ink-900 placeholder:text-ink-300 transition-colors focus:border-primary-500";
+    "w-full rounded-lg bg-panel2 border border-line pl-10 pr-10 py-2.5 text-[14px] font-medium text-white placeholder:text-white/25 focus:border-brand transition-colors outline-none";
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-[1.02fr_1fr]">
+    <div className="min-h-screen grid lg:grid-cols-[1.05fr_1fr] bg-oled text-white">
       {/* ——— Panneau marque ——— */}
-      <aside className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-ink-900 p-10 xl:p-14">
+      <aside className="relative hidden lg:flex flex-col justify-between overflow-hidden p-12">
         <img
-          src={IMG_REGIE}
+          src={IMG.studio}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover opacity-60"
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-          }}
+          className="absolute inset-0 w-full h-full object-cover opacity-50"
+          onError={(e) => (e.currentTarget.style.display = "none")}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-ink-900 via-ink-900/55 to-ink-900/30" />
-        <div className="absolute inset-0 bg-gradient-to-r from-ink-900/70 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-oled via-oled/60 to-oled/30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-oled/80" />
 
         <div className="relative">
-          <LogoBalafon clair />
+          <Logo />
         </div>
 
-        <div className="relative max-w-[440px]">
-          <TouchesBalafon className="mb-6 opacity-90" />
-          <h1 className="font-display text-[42px] xl:text-[50px] font-black leading-[1.04] tracking-tight text-white">
-            La grille d'antenne,
+        <div className="relative max-w-[480px]">
+          <p className="text-[11px] font-black uppercase tracking-[0.24em] text-brand">Console de diffusion</p>
+          <h1 className="font-display font-black text-[52px] leading-[1.02] tracking-tight mt-3">
+            Créez.
             <br />
-            du brouillon
+            Validez.
             <br />
-            <span className="text-primary-400">au direct.</span>
+            <span className="text-brand italic">Diffusez.</span>
           </h1>
-          <p className="text-white/60 text-[14.5px] leading-relaxed mt-5">
-            Édition hebdomadaire, validation par la Direction d'Antenne et synchronisation régie —
-            sur une seule plateforme, pensée pour Balafon Media Group.
+          <p className="text-white/55 text-[14.5px] leading-relaxed mt-5">
+            La plateforme de gestion des grilles de programmes du groupe Balafon Media — du brouillon du
+            Directeur d'Antenne jusqu'à l'antenne, supervisée par la Régie Diffusion.
           </p>
 
-          <ul className="mt-8 space-y-3.5">
+          <ul className="mt-9 space-y-4">
             {[
-              { icon: "calendar_month", txt: "Éditeur de grille hebdomadaire avec détection de conflits horaires" },
-              { icon: "fact_check", txt: "Circuit de validation : brouillon → validation → diffusion" },
-              { icon: "live_tv", txt: "Régie temps réel et synchronisation vMix, thème control-room" },
+              { Icon: CalendarPlus, titre: "Directeur d'Antenne", txt: "Créer les grilles EPG, importer les médias, soumettre pour validation." },
+              { Icon: Radio, titre: "Régie Diffusion", txt: "Valider, modifier ou supprimer les grilles en temps réel." },
+              { Icon: HardDrive, titre: "Stockage & Planification", txt: "Backend simulé : persistance locale et synchro multi-onglets." },
             ].map((f) => (
-              <li key={f.icon} className="flex items-start gap-3 text-[13.5px] text-white/75">
-                <span className="grid place-items-center w-8 h-8 rounded-lg bg-white/[0.07] border border-white/10 text-primary-400 flex-none">
-                  <Icone name={f.icon} size={16} />
+              <li key={f.titre} className="flex items-start gap-3.5">
+                <span className="grid place-items-center w-10 h-10 rounded-lg bg-white/[0.06] border border-white/10 text-brand flex-none">
+                  <f.Icon size={18} />
                 </span>
-                <span className="pt-1.5 leading-snug">{f.txt}</span>
+                <span>
+                  <span className="block text-[13.5px] font-bold">{f.titre}</span>
+                  <span className="block text-[12.5px] text-white/45 leading-snug mt-0.5">{f.txt}</span>
+                </span>
               </li>
             ))}
           </ul>
         </div>
 
-        <p className="relative text-[11px] text-white/35 font-medium tracking-wide">
-          Balafon Media Group · Stage IAI Cameroun — plateforme de gestion d'antenne
+        <p className="relative text-[11px] text-white/30 font-medium tracking-wide">
+          Balafon Media Group · Stage IAI Cameroun — BALAFON+ Guide
         </p>
       </aside>
 
-      {/* ——— Panneau formulaire ——— */}
-      <main className="flex items-center justify-center px-5 py-10 bg-surface bg-dots">
-        <div className="w-full max-w-[420px] animate-rise">
+      {/* ——— Formulaire ——— */}
+      <main className="flex items-center justify-center px-5 py-10 bg-noise">
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="w-full max-w-[420px]"
+        >
           <div className="lg:hidden mb-8">
-            <LogoBalafon />
+            <Logo />
           </div>
 
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary-600">Espace de travail</p>
-          <h2 className="font-display text-[28px] font-black tracking-tight text-ink-900 mt-2">
-            {mode === "connexion" ? "Connexion à la régie" : "Demande d'accès"}
-          </h2>
-          <p className="text-[13.5px] text-ink-500 mt-1.5">
-            {mode === "connexion"
-              ? "Accédez à votre espace selon votre rôle d'antenne."
-              : "Votre demande sera examinée par un administrateur."}
+          <p className="text-[11px] font-black uppercase tracking-[0.22em] text-brand">S'authentifier</p>
+          <h2 className="font-display font-black text-[30px] tracking-tight mt-2">Connexion à la console</h2>
+          <p className="text-[13.5px] text-white/40 mt-1.5">
+            L'accès est redirigé selon votre rôle : Directeur, Régie ou Téléspectateur.
           </p>
 
-          <div className="mt-6 grid grid-cols-2 rounded-xl border border-ink-200 bg-ink-100/70 p-1 text-[13px] font-semibold">
-            {(["connexion", "demande"] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => {
-                  setMode(m);
-                  setErreur(null);
-                  setDemandeOk(null);
-                }}
-                className={`py-2 rounded-lg transition-all duration-200 ${
-                  mode === m ? "bg-paper shadow-card text-ink-900" : "text-ink-400 hover:text-ink-600"
-                }`}
-              >
-                {m === "connexion" ? "Connexion" : "Inscription"}
-              </button>
-            ))}
-          </div>
-
-          {demandeOk ? (
-            <div className="mt-6 rounded-xl border border-ok/25 bg-emerald-50 p-6 text-center animate-scale-in">
-              <span className="inline-grid place-items-center w-12 h-12 rounded-full bg-ok text-white mb-3">
-                <Icone name="check" size={26} />
-              </span>
-              <p className="font-display font-bold text-[16px] text-ink-900">Demande envoyée</p>
-              <p className="text-[13px] text-ink-600 mt-1.5 leading-relaxed">{demandeOk}</p>
-              <button
-                onClick={() => {
-                  setDemandeOk(null);
-                  setMode("connexion");
-                }}
-                className="mt-4 text-[13px] font-bold text-secondary-600 hover:underline"
-              >
-                ← Retour à la connexion
-              </button>
+          <form key={secousse} onSubmit={(e) => void entrer(e)} className={`mt-7 ${secousse > 0 && erreur ? "animate-shake" : ""}`}>
+            <div className="space-y-3.5">
+              <label className="relative block">
+                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                <input
+                  className={inputCls}
+                  type="email"
+                  placeholder="Adresse email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  required
+                />
+              </label>
+              <label className="relative block">
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                <input
+                  className={inputCls}
+                  type={voir ? "text" : "password"}
+                  placeholder="Mot de passe"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setVoir((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white transition-colors"
+                  aria-label={voir ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                >
+                  {voir ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </label>
             </div>
-          ) : (
-            <form key={secousse} onSubmit={mode === "connexion" ? soumettre : soumettreDemande} className={secousse > 0 && erreur ? "animate-shake mt-6" : "mt-6"}>
-              <div className="space-y-3.5">
-                {mode === "demande" && (
-                  <label className="relative block">
-                    <Icone name="person" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-300" />
-                    <input className={inputCls} placeholder="Nom complet" value={nom} onChange={(e) => setNom(e.target.value)} autoComplete="name" />
-                  </label>
-                )}
-                <label className="relative block">
-                  <Icone name="mail" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-300" />
-                  <input
-                    className={inputCls}
-                    type="email"
-                    placeholder="Adresse email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="email"
-                  />
-                </label>
-                <label className="relative block">
-                  <Icone name="key" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-300" />
-                  <input
-                    className={inputCls}
-                    type="password"
-                    placeholder="Mot de passe"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete={mode === "connexion" ? "current-password" : "new-password"}
-                  />
-                </label>
-              </div>
 
-              {erreur && (
-                <p className="mt-3.5 flex items-center gap-2 text-[13px] font-semibold text-live animate-fade-in">
-                  <Icone name="error" size={16} /> {erreur}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={chargement}
-                className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 py-2.5 text-[14px] font-bold text-white hover:bg-primary-700 active:scale-[0.99] transition-all disabled:opacity-60"
-              >
-                {chargement ? <Spinner size={17} /> : <Icone name={mode === "connexion" ? "login" : "how_to_reg"} size={18} />}
-                {mode === "connexion" ? "Se connecter" : "Envoyer la demande"}
-              </button>
-            </form>
-          )}
-
-          {MODE_DEMO && mode === "connexion" && !demandeOk && (
-            <div className="mt-8">
-              <p className="flex items-center gap-3 text-[10.5px] font-bold uppercase tracking-[0.16em] text-ink-300">
-                <span className="h-px flex-1 bg-ink-200" /> Comptes de démonstration <span className="h-px flex-1 bg-ink-200" />
+            {erreur && (
+              <p className="mt-3.5 flex items-center gap-2 text-[13px] font-semibold text-danger animate-fade">
+                <KeyRound size={15} /> {erreur}
               </p>
-              <div className="mt-4 space-y-2">
-                {USERS_DEMO.map((u) => (
+            )}
+
+            <button
+              type="submit"
+              disabled={busy}
+              className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-brand hover:bg-brand2 py-3 text-[14px] font-bold text-white shadow-glow transition-all active:scale-[0.99] disabled:opacity-60"
+            >
+              {busy ? <Loader2 size={17} className="animate-spin" /> : <ArrowRight size={17} />}
+              Se connecter
+            </button>
+          </form>
+
+          <Link to="/" className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-white/45 hover:text-brand transition-colors">
+            <Tv size={15} /> Continuer vers le portail public
+          </Link>
+
+          <div className="mt-9">
+            <p className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
+              <span className="h-px flex-1 bg-line" /> Comptes de démonstration <span className="h-px flex-1 bg-line" />
+            </p>
+            <div className="mt-4 space-y-2">
+              {DEMO_ACCOUNTS.map((c) => {
+                const Ic = ROLE_ICON[c.user.role];
+                return (
                   <button
-                    key={u.email}
+                    key={c.email}
                     onClick={() => {
-                      setEmail(u.email);
-                      setPassword(u.password);
+                      setEmail(c.email);
+                      setPassword(c.password);
                       setErreur(null);
+                      void entrer(undefined, c);
                     }}
-                    className="w-full flex items-center gap-3 rounded-lg border border-ink-200 bg-paper px-3.5 py-2.5 text-left transition-all duration-150 hover:border-primary-300 hover:shadow-card group"
+                    disabled={busy}
+                    className="w-full flex items-center gap-3.5 rounded-lg border border-line bg-panel px-4 py-3 text-left transition-all duration-200 hover:border-brand/50 hover:bg-panel2 group disabled:opacity-60"
                   >
-                    <span className="grid place-items-center w-8 h-8 rounded-lg bg-primary-50 text-primary-600 group-hover:bg-primary-600 group-hover:text-white transition-colors">
-                      <Icone name={u.role === "admin" ? "dashboard" : u.role === "directeur" ? "fact_check" : "live_tv"} size={16} />
+                    <span className="grid place-items-center w-9 h-9 rounded-lg bg-brand/10 text-brand group-hover:bg-brand group-hover:text-white transition-colors flex-none">
+                      <Ic size={16} />
                     </span>
                     <span className="flex-1 min-w-0">
-                      <span className="block text-[12.5px] font-bold text-ink-800">{ROLE_LABELS[u.role]}</span>
-                      <span className="block text-[11px] text-ink-400 font-mono truncate">
-                        {u.email} · {u.password}
+                      <span className="block text-[13px] font-bold">{ROLE_TITRE[c.user.role]}</span>
+                      <span className="block text-[11px] text-white/35 font-mono truncate">
+                        {c.email} · {DEMO_PASSWORD}
                       </span>
                     </span>
-                    <Icone name="arrow_forward" size={16} className="text-ink-300 group-hover:text-primary-600 group-hover:translate-x-0.5 transition-all" />
+                    <ArrowRight size={15} className="text-white/25 group-hover:text-brand group-hover:translate-x-0.5 transition-all flex-none" />
                   </button>
-                ))}
-              </div>
-              <p className="text-[11px] text-ink-400 mt-4 text-center leading-relaxed">
-                Mode démo : données simulées en local (aucun backend requis).
-                <br />
-                Ouvrez <span className="font-mono font-semibold">/regie</span> et <span className="font-mono font-semibold">/directeur</span> dans deux onglets pour voir le temps réel.
-              </p>
+                );
+              })}
             </div>
-          )}
-        </div>
+            <p className="text-[11px] text-white/30 mt-4 text-center leading-relaxed">
+              Démo : données simulées en local — ouvrez Directeur et Régie dans deux onglets pour voir la synchro temps réel.
+            </p>
+          </div>
+        </motion.div>
       </main>
     </div>
   );

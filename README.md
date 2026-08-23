@@ -1,72 +1,77 @@
-# BALAFON+ Guide — Gestion & diffusion de programmes TV
+# Balafon+ Guide — Balafon Media Group
 
-Application React (Vite + Tailwind CSS + Lucide Icons + Framer Motion) de gestion
-et de diffusion de programmes TV pour **Balafon Media**, construite autour d'un
-diagramme de cas d'utilisation UML à 4 acteurs :
+Plateforme centralisée de gestion de la grille des programmes TV, synchronisée
+avec la régie vMix, avec un portail public digne de Netflix / Canal+ / DStv+.
 
-| Acteur | Rôle dans l'application |
-|---|---|
-| **Directeur d'Antenne** | Crée les grilles EPG, importe les médias, modifie / supprime les grilles |
-| **Régie Diffusion** | Valide, modifie et supprime les grilles en temps réel |
-| **Téléspectateur** | Consulte le site/TV, sélectionne et affiche les grilles de programmes |
-| **Système de Planification / Stockage** | Backend simulé par `src/services/storage.ts` (persistance + temps réel) |
+Remplace la gestion manuelle identifiée par l'audit interne : plus de compteur
+« Nuit 0 » vide, plus de double saisie en régie, plus de validation hors circuit.
 
 ## Démarrage
 
 ```bash
 npm install
-npm run dev        # ou npm run build pour la production
+npm run dev      # ou npm run build → dist/
 ```
 
-Aucun backend requis : le service de Stockage simulé persiste tout en
-`localStorage` et synchronise les onglets ouverts via `BroadcastChannel`
-(ouvrez `#/directeur` et `#/regie` côte à côte : une validation côté Régie se
-voit instantanément côté Directeur, Guide TV et portail).
+## Architecture — 2 modules
 
-### Comptes de démonstration (mot de passe `balafon237`)
+### Module 1 · Portail public (Téléspectateur) — `#/` et `#/guide`
 
-| Rôle | Email | Redirection |
-|---|---|---|
-| Directeur d'Antenne | `directeur@balafon.cm` | `#/directeur` |
-| Régie Diffusion | `regie@balafon.cm` | `#/regie` |
-| Téléspectateur | `telespectateur@balafon.cm` | `#/` (portail) |
+- **Navbar** glassmorphism : BALAFON TV, Accueil / Guide TV / Replay, recherche, avatar.
+- **Le Boulevard du Direct** : bannière 90vh sur l'émission en cours de diffusion
+  (badge rouge pulsant EN DIRECT, progression du direct, « Regarder le Live »).
+- **Rail « En ce moment »** : cartes 16:9, heure précise à la minute, barre de
+  progression rouge du direct.
+- **Rail Replays & VOD** : affiches 2:3, zoom 1.05 + overlay au survol.
+- **Guide TV (EPG public)** : timeline horizontale 06:00 → 24:00, onglets de
+  jours, précision à la minute, et **les plages non diffusées affichent
+  « Hors antenne / Rediffusion »** (fin du compteur de nuit vide).
 
-Le portail téléspectateur et le Guide TV sont publics (aucune connexion requise).
+### Module 2 · Back-office (Staff) — `#/login` puis `#/studio`
 
-## Cas d'utilisation couverts
+Layout SaaS (sidebar + topbar). La topbar porte le **switcheur de rôle**
+(Admin / Directeur / Régie) et le statut **« API vMix : Synchronisée »**.
 
-- **S'Authentifier** — `LoginPage` commune, redirection basée sur le rôle.
-- **Créer Grille EPG** — modale de création (grille vierge ou duplication d'une
-  grille existante sur la semaine choisie), statut initial *Brouillon*.
-- **Importer Media** — zone de drag & drop vers le Stockage simulé : upload,
-  transcodage animé, médiathèque consultable ; les affiches importées sont
-  réutilisables sur les émissions.
-- **Modifier / Supprimer Grille** — éditeur complet (émissions par jour,
-  détection de conflits horaires, couverture d'antenne), suppression avec
-  modale de confirmation → corbeille (restauration / destruction définitive).
-- **Valider Grille** — file de validation côté Régie avec aperçu des programmes,
-  alerte de conflits, modale de confirmation ; **rejeter** exige un motif.
-- **Consulter Site/TV · Sélectionner Grille · Afficher Grille** — portail
-  streaming (billboard, rail « En Direct Maintenant » avec progression, rails
-  Reprendre / Replays / Top 10) et Guide TV : sélecteur de grille + de jour,
-  timeline visuelle heure par heure avec ligne « maintenant ».
+- **Administrateur — Constructeur EPG** (`AdminBuilder`)
+  Split-screen : à gauche la *Bibliothèque des Programmes* (cartes statut Gold,
+  draggables), à droite la *Timeline EPG 24h* (slots de 30 min, 06h → 00h).
+  Le bloc déposé devient solide, affiche début/fin exacts et prend la couleur
+  de sa catégorie. **Contrôle de complétude** : tout trou de 30 min est hachuré
+  rouge « Programme manquant » et « Publier la Grille » reste grisé tant qu'il
+  reste un trou.
+- **Directeur d'Antenne — Validation éditoriale** (`DirecteurKanban`)
+  Kanban 3 colonnes : Brouillons / En attente de validation / Validées pour
+  diffusion. Valider → la carte passe en vert et à l'antenne. Modifier une
+  grille **déjà validée** → pop-up rouge *« cette modification déclenchera une
+  alerte temps réel à la Régie »* + log tracé.
+- **Régie de Diffusion — Mission Control** (`RegieControl`)
+  Bandeau « EN DIRECT SUR BALAFON TV », timeline EPG en lecture seule avec
+  **playhead rouge** qui se déplace en temps réel, *Console d'Alertes Temps
+  Réel* (alerte rouge clignotante sur chaque modification Directeur, bouton
+  « Acquitter l'alerte ») et synchronisation vMix. **Fin de la double saisie** :
+  la régie lit le miroir de la grille validée.
 
-## Workflow simulé (états de grille)
+## Stack & signature visuelle
 
-`Brouillon` → `En attente de validation` → `Validée` (visible sur le portail et
-le Guide TV) — `Supprimée` (corbeille). Chaque action alimente le **journal
-temps réel** de la Régie.
+React + Vite + Tailwind CSS v4, Lucide Icons, Framer Motion, drag & drop HTML5
+natif. Poppins (display) / Inter (corps) / JetBrains Mono (heures EPG).
 
-## Thème
+- Portail public : noir absolu `#050505`, immersif et cinématographique.
+- Back-office : noir bleuté `#0B0E14`, composants anthracite vitré `#1A1F2E`.
+- Accents : **Balafon Red** `#FF3D00` (live, playhead), **Studio Green**
+  `#00F5A0` (validé, vMix), **Warning Gold** `#FFB800` (brouillons, attente).
 
-Dark mode « OLED Black » (`#0A0A0A` / composants `#141414`), accent orange
-`#FF5722`, barre de navigation en glassmorphism, cartes avec zoom au survol et
-overlay d'informations, typographie Archivo (display) + Inter (corps) +
-JetBrains Mono (timecodes).
+## Démo temps réel
 
-## Backend Django + PostgreSQL (optionnel)
+Ouvrez `#/studio` (Directeur) et un second onglet `#/studio` (Régie via le
+switcheur) : modifier une grille validée côté Directeur fait **clignoter
+l'alerte côté Régie instantanément** (BroadcastChannel), de même que les
+validations se répercutent sur le portail public et le Guide TV.
+L'état persiste en localStorage.
 
-Un backend Django complet (DRF + Channels + PostgreSQL) livré dans
-[`backend/`](backend/README.md) reste disponible si vous souhaitez remplacer la
-simulation frontend par une vraie API (workflow d'émissions par rôle,
-WebSocket `ws/grille/`, seed PostgreSQL).
+## Backend Django (optionnel)
+
+Une implémentation Django + PostgreSQL du lot précédent reste disponible dans
+`backend/` (DRF, Channels, workflow brouillon → validation → diffusion). Le
+frontend actuel fonctionne de manière autonome grâce au système de
+planification/stockage simulé (`src/state/store.tsx`).

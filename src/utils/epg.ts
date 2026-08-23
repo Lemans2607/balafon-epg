@@ -1,155 +1,172 @@
-import type { Emission, Grille } from "../types";
+import type { BlocPlace, Categorie, Grille, Programme, Role, StatutGrille } from "../types";
 
-/* ——— Temps ——— */
+/* ——— Slots : 36 × 30 min, de 06:00 à 24:00 ——— */
 
-export const toMin = (s: string): number => {
-  const [h, m] = s.split(":").map(Number);
-  return (h || 0) * 60 + (m || 0);
-};
+export const SLOTS = 36;
+export const SLOT_MIN = 30;
+export const DEBUT_JOUR_MIN = 6 * 60; // 06:00
+
+export const slotDebutMin = (slot: number): number => DEBUT_JOUR_MIN + slot * SLOT_MIN;
 
 export const toHHMM = (min: number): string => {
   const m = ((Math.round(min) % 1440) + 1440) % 1440;
   return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 };
 
-/** fin « 00:00 » = minuit → 1440 */
-export const finEnMin = (e: Emission): number => {
-  const f = toMin(e.fin);
-  return f === 0 ? 1440 : f;
-};
+/** Fin de journée affichée « 24:00 » pour la lisibilité EPG. */
+export const finHHMM = (min: number): string => (min >= 1440 ? "24:00" : toHHMM(min));
 
-/* ——— Dates ——— */
+export const slotLabel = (slot: number): string => toHHMM(slotDebutMin(slot));
+export const slotsPour = (duree: number): number => Math.max(1, Math.round(duree / SLOT_MIN));
+export const finBlocLabel = (slot: number, duree: number): string =>
+  finHHMM(slotDebutMin(slot) + duree);
 
-export const parseJour = (s: string): Date => new Date(`${s}T12:00:00`);
-
-export const isoJour = (d: Date): string => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const j = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${j}`;
-};
-
-export const lundiDe = (d: Date): Date => {
-  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const decal = (x.getDay() + 6) % 7;
-  x.setDate(x.getDate() - decal);
-  return x;
-};
-
-export const addDays = (d: Date, n: number): Date => {
-  const x = new Date(d);
-  x.setDate(x.getDate() + n);
-  return x;
-};
+/* ——— Jours ——— */
 
 export const JOURS_COURT = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 export const JOURS_LONG = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
-export const fmtJour = (iso: string): string => {
-  const d = parseJour(iso);
-  const idx = (d.getDay() + 6) % 7;
-  return `${JOURS_LONG[idx]} ${d.getDate()} ${d.toLocaleDateString("fr-FR", { month: "short" })}`;
-};
+export const jourIdxAujourdhui = (d: Date = new Date()): number => (d.getDay() + 6) % 7;
 
-export const fmtJourCourt = (iso: string): string => {
-  const d = parseJour(iso);
-  return `${JOURS_COURT[(d.getDay() + 6) % 7]} ${d.getDate()}`;
-};
+/* ——— Occupation & trous ——— */
 
-export const fmtSemaine = (lundiIso: string): string => {
-  const l = parseJour(lundiIso);
-  const dim = addDays(l, 6);
-  const f = (x: Date) => x.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-  return `Semaine du ${f(l)} au ${f(dim)}`;
-};
+export const programmeDe = (programmes: Programme[], id: string): Programme | undefined =>
+  programmes.find((p) => p.id === id);
 
-export const joursSemaine = (lundiIso: string): string[] =>
-  Array.from({ length: 7 }, (_, i) => isoJour(addDays(parseJour(lundiIso), i)));
-
-/* ——— Logique EPG ——— */
-
-export const chevauche = (a: Emission, b: Emission): boolean =>
-  a.jour === b.jour && toMin(a.debut) < finEnMin(b) && toMin(b.debut) < finEnMin(a);
-
-export const conflitsDe = (grille: Grille): [Emission, Emission][] => {
-  const out: [Emission, Emission][] = [];
-  const parJour = new Map<string, Emission[]>();
-  for (const e of grille.emissions) {
-    if (!parJour.has(e.jour)) parJour.set(e.jour, []);
-    parJour.get(e.jour)!.push(e);
+export const occupation = (blocs: BlocPlace[], programmes: Programme[]): boolean[] => {
+  const occ = new Array<boolean>(SLOTS).fill(false);
+  for (const b of blocs) {
+    const p = programmeDe(programmes, b.programmeId);
+    if (!p) continue;
+    const n = slotsPour(p.duree);
+    for (let k = 0; k < n; k++) if (b.slot + k < SLOTS) occ[b.slot + k] = true;
   }
-  for (const list of parJour.values()) {
-    const tri = [...list].sort((a, b) => toMin(a.debut) - toMin(b.debut));
-    for (let i = 0; i < tri.length; i++) {
-      for (let j = i + 1; j < tri.length; j++) {
-        if (chevauche(tri[i], tri[j])) out.push([tri[i], tri[j]]);
-      }
-    }
-  }
-  return out;
+  return occ;
 };
 
-/** % de la journée (1440 min) couverte par la grille pour un jour donné */
-export const couvertureJour = (grille: Grille, jour: string): number => {
-  const total = grille.emissions
-    .filter((e) => e.jour === jour)
-    .reduce((s, e) => s + Math.max(0, finEnMin(e) - toMin(e.debut)), 0);
-  return Math.min(100, Math.round((total / 1440) * 100));
-};
+export const trousDe = (blocs: BlocPlace[], programmes: Programme[]): number[] =>
+  occupation(blocs, programmes).map((o, i) => (o ? -1 : i)).filter((i) => i >= 0);
 
-export const couvertureMoyenne = (grille: Grille): number => {
-  const jours = joursSemaine(grille.semaineDebut);
-  const vals = jours.map((j) => couvertureJour(grille, j));
-  return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
-};
+export const trousGrille = (g: Grille, programmes: Programme[]): number =>
+  g.jours.reduce((s, j) => s + trousDe(j, programmes).length, 0);
 
-export const dureeLabel = (debut: string, fin: string): string => {
-  const m = finEnMin({ fin } as Emission) - toMin(debut);
-  if (m < 60) return `${m} min`;
-  const h = Math.floor(m / 60);
-  const r = m % 60;
-  return r ? `${h} h ${String(r).padStart(2, "0")}` : `${h} h`;
+export const estComplete = (g: Grille, programmes: Programme[]): boolean =>
+  trousGrille(g, programmes) === 0;
+
+/** Le bloc qui couvre un slot donné (un bloc occupe plusieurs slots). */
+export const blocCouvrant = (
+  blocs: BlocPlace[],
+  programmes: Programme[],
+  slot: number
+): BlocPlace | undefined =>
+  blocs.find((b) => {
+    const p = programmeDe(programmes, b.programmeId);
+    if (!p) return false;
+    return slot >= b.slot && slot < b.slot + slotsPour(p.duree);
+  });
+
+export const peutPlacer = (
+  blocs: BlocPlace[],
+  programmes: Programme[],
+  slot: number,
+  duree: number,
+  ignorerBlocId?: string
+): boolean => {
+  const n = slotsPour(duree);
+  if (slot < 0 || slot + n > SLOTS) return false;
+  const autres = blocs.filter((b) => b.id !== ignorerBlocId);
+  return !autres.some((b) => {
+    const p = programmeDe(programmes, b.programmeId);
+    if (!p) return false;
+    const nB = slotsPour(p.duree);
+    return slot < b.slot + nB && b.slot < slot + n;
+  });
 };
 
 /* ——— Direct / à suivre ——— */
 
 export const minutesJour = (d: Date): number => d.getHours() * 60 + d.getMinutes();
 
-export const estEnDirect = (e: Emission, now: Date): boolean => {
+export interface LiveInfo {
+  bloc: BlocPlace;
+  prog: Programme;
+  progres: number; // 0–100
+}
+
+export const enDirectMaintenant = (
+  grille: Grille | undefined,
+  programmes: Programme[],
+  now: Date
+): LiveInfo | null => {
+  if (!grille) return null;
   const m = minutesJour(now);
-  return e.jour === isoJour(now) && m >= toMin(e.debut) && m < finEnMin(e);
+  if (m < DEBUT_JOUR_MIN) return null; // nuit — antenne fermée
+  const blocs = grille.jours[jourIdxAujourdhui(now)] ?? [];
+  for (const b of blocs) {
+    const p = programmeDe(programmes, b.programmeId);
+    if (!p) continue;
+    const debut = slotDebutMin(b.slot);
+    const fin = debut + p.duree;
+    if (m >= debut && m < fin) {
+      return { bloc: b, prog: p, progres: ((m - debut) / p.duree) * 100 };
+    }
+  }
+  return null;
 };
 
-export const estPasse = (e: Emission, now: Date): boolean =>
-  e.jour < isoJour(now) || (e.jour === isoJour(now) && minutesJour(now) >= finEnMin(e));
-
-export const progresPct = (e: Emission, now: Date): number => {
+export const aSuivreAujourdhui = (
+  grille: Grille | undefined,
+  programmes: Programme[],
+  now: Date
+): { bloc: BlocPlace; prog: Programme }[] => {
+  if (!grille) return [];
   const m = minutesJour(now);
-  const d = toMin(e.debut);
-  const f = finEnMin(e);
-  return Math.max(0, Math.min(100, ((m - d) / (f - d)) * 100));
+  const blocs = grille.jours[jourIdxAujourdhui(now)] ?? [];
+  return blocs
+    .map((bloc) => ({ bloc, prog: programmeDe(programmes, bloc.programmeId) }))
+    .filter((x): x is { bloc: BlocPlace; prog: Programme } => Boolean(x.prog))
+    .filter((x) => slotDebutMin(x.bloc.slot) >= m)
+    .sort((a, b) => a.bloc.slot - b.bloc.slot);
 };
 
-export const emissionLive = (grille: Grille, now: Date): Emission | null =>
-  grille.emissions.find((e) => estEnDirect(e, now)) ?? null;
+/* ——— Divers ——— */
 
-export const emissionSuivante = (grille: Grille, now: Date): Emission | null => {
-  const m = minutesJour(now);
-  const auj = isoJour(now);
-  const candidats = grille.emissions
-    .filter((e) => e.jour === auj && toMin(e.debut) >= m)
-    .sort((a, b) => toMin(a.debut) - toMin(b.debut));
-  return candidats[0] ?? null;
-};
+export const uid = (prefix: string): string =>
+  `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
 export const ilYa = (ts: number): string => {
   const min = Math.max(0, Math.round((Date.now() - ts) / 60_000));
   if (min < 1) return "à l'instant";
   if (min < 60) return `il y a ${min} min`;
   const h = Math.floor(min / 60);
-  if (h < 24) return `il y a ${h} h`;
-  return `il y a ${Math.floor(h / 24)} j`;
+  return h < 24 ? `il y a ${h} h` : `il y a ${Math.floor(h / 24)} j`;
 };
 
-export const uid = (prefix: string): string =>
-  `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+/* ——— Référentiels d'affichage ——— */
+
+export const CATS: Record<Categorie, { label: string; color: string }> = {
+  information: { label: "Information", color: "#3D9BFF" },
+  divertissement: { label: "Divertissement", color: "#FF5CA8" },
+  sport: { label: "Sport", color: "#00D1FF" },
+  culture: { label: "Culture", color: "#B18CFF" },
+  film: { label: "Film & Série", color: "#FF8A3D" },
+  jeunesse: { label: "Jeunesse", color: "#FFE06B" },
+};
+
+export const TYPES: Record<string, string> = {
+  direct: "Direct",
+  enregistre: "Enregistré",
+  rediffusion: "Rediffusion",
+};
+
+export const STATUTS: Record<StatutGrille, { label: string; color: string }> = {
+  brouillon: { label: "Brouillon", color: "#FFB800" },
+  en_attente: { label: "En attente de validation", color: "#FFB800" },
+  validee: { label: "Validée pour diffusion", color: "#00F5A0" },
+};
+
+export const ROLES: Record<Role, { label: string; court: string }> = {
+  admin: { label: "Administrateur", court: "Admin" },
+  directeur: { label: "Directeur d'Antenne", court: "Directeur" },
+  regie: { label: "Régie de Diffusion", court: "Régie" },
+};

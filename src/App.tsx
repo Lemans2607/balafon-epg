@@ -1,66 +1,49 @@
-import type { ReactNode } from "react";
-import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
-import { AppProvider, useApp } from "./context/AppContext";
-import { ToastProvider } from "./components/ui";
-import { LoginPage, ROLE_HOME } from "./pages/LoginPage";
-import { ViewerPortal } from "./pages/ViewerPortal";
-import { GuideTv } from "./pages/GuideTv";
-import { DirecteurDashboard } from "./pages/DirecteurDashboard";
-import { RegieDashboard } from "./pages/RegieDashboard";
-import type { Role } from "./types";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { HashRouter } from "react-router-dom";
+import { StudioProvider, useStudio } from "./state/store";
+import { ToastProvider } from "./components/shared";
+import { PublicPortal } from "./pages/PublicPortal";
+import { PublicGuide } from "./pages/PublicGuide";
+import { LoginPage } from "./pages/LoginPage";
+import { BackOfficeShell } from "./backoffice/BackOfficeShell";
+import { AdminBuilder } from "./backoffice/AdminBuilder";
+import { DirecteurKanban } from "./backoffice/DirecteurKanban";
+import { RegieControl } from "./backoffice/RegieControl";
 
-/** Garde par rôle (cas d'utilisation « S'Authentifier » + redirection). */
-function Garde({ role, children }: { role: Role; children: ReactNode }) {
-  const { user } = useApp();
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== role) return <Navigate to={ROLE_HOME[user.role]} replace />;
-  return <>{children}</>;
-}
-
-/** Page de connexion — redirige si déjà authentifié. */
-function PageLogin() {
-  const { user } = useApp();
-  if (user) return <Navigate to={ROLE_HOME[user.role]} replace />;
-  return <LoginPage />;
+/** Back-office : garde d'authentification + vue selon le rôle actif. */
+function Studio() {
+  const { role } = useStudio();
+  const location = useLocation();
+  if (!role) return <Navigate to="/login" replace state={{ from: location }} />;
+  return (
+    <BackOfficeShell>
+      {role === "admin" && <AdminBuilder />}
+      {role === "directeur" && <DirecteurKanban />}
+      {role === "regie" && <RegieControl />}
+    </BackOfficeShell>
+  );
 }
 
 export default function App() {
   return (
-    <AppProvider>
+    <StudioProvider>
       <ToastProvider>
         <HashRouter>
           <Routes>
-            {/* Téléspectateur — Consulter Site/TV, Sélectionner & Afficher Grille */}
-            <Route path="/" element={<ViewerPortal />} />
-            <Route path="/guide" element={<GuideTv />} />
+            {/* ——— Module 1 : Portail public téléspectateur ——— */}
+            <Route path="/" element={<PublicPortal />} />
+            <Route path="/guide" element={<PublicGuide />} />
 
-            {/* S'Authentifier */}
-            <Route path="/login" element={<PageLogin />} />
+            {/* ——— Authentification commune ——— */}
+            <Route path="/login" element={<LoginPage />} />
 
-            {/* Directeur d'Antenne — Créer / Importer / Modifier / Supprimer Grille */}
-            <Route
-              path="/directeur"
-              element={
-                <Garde role="directeur">
-                  <DirecteurDashboard />
-                </Garde>
-              }
-            />
-
-            {/* Régie Diffusion — Valider / Modifier / Supprimer en temps réel */}
-            <Route
-              path="/regie"
-              element={
-                <Garde role="regie">
-                  <RegieDashboard />
-                </Garde>
-              }
-            />
+            {/* ——— Module 2 : Back-office (Admin / Directeur / Régie) ——— */}
+            <Route path="/studio" element={<Studio />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </HashRouter>
       </ToastProvider>
-    </AppProvider>
+    </StudioProvider>
   );
 }

@@ -1,15 +1,6 @@
-/* ——— Modèle métier BALAFON+ Guide ——— */
+/* ——— Modèle métier « Balafon+ Guide » ——— */
 
-export type Role = "directeur" | "regie" | "telespectateur";
-
-export interface Utilisateur {
-  id: string;
-  nom: string;
-  email: string;
-  role: Role;
-}
-
-export type StatutGrille = "brouillon" | "en_attente" | "valide" | "supprimee";
+export type Role = "admin" | "directeur" | "regie";
 
 export type Categorie =
   | "information"
@@ -21,79 +12,58 @@ export type Categorie =
 
 export type TypeDiffusion = "direct" | "enregistre" | "rediffusion";
 
-export interface Chaine {
-  id: string;
-  nom: string;
-  short: string;
-  accent: string;
-}
+export type StatutGrille = "brouillon" | "en_attente" | "validee";
 
-export interface Emission {
+/** Programme de la bibliothèque (source du drag & drop). */
+export interface Programme {
   id: string;
   titre: string;
-  jour: string; // YYYY-MM-DD
-  debut: string; // HH:MM
-  fin: string; // HH:MM (00:00 = minuit fin de journée)
   categorie: Categorie;
+  duree: number; // minutes — multiple de 30
   type: TypeDiffusion;
   description: string;
   image?: string;
 }
 
+/** Bloc placé sur la timeline EPG (slot de 30 min, 06:00 → 24:00). */
+export interface BlocPlace {
+  id: string;
+  programmeId: string;
+  slot: number; // 0 = 06:00 … 35 = 23:30
+}
+
+/** Une grille = une semaine complète de Balafon TV (7 jours). */
 export interface Grille {
   id: string;
   nom: string;
-  chaineId: string;
-  semaineDebut: string; // lundi (ISO)
+  semaine: string; // libellé affiché
   statut: StatutGrille;
-  emissions: Emission[];
+  jours: BlocPlace[][]; // index 0 = Lundi … 6 = Dimanche
+  antenne: boolean; // grille actuellement diffusée (miroir régie + portail)
   creePar: string;
   majLe: number;
-  commentaireRejet?: string;
 }
 
-export type MediaType = "video" | "audio" | "affiche" | "sous-titres";
-
-export interface MediaItem {
-  id: string;
-  nom: string;
-  type: MediaType;
-  tailleMo: number;
-  duree?: string;
-  emisPar: string;
-  emisLe: number;
-  statut: "transcodage" | "pret";
-  progression: number; // 0–100 (transcodage)
-}
-
-export interface VodItem {
-  id: string;
-  titre: string;
-  sousTitre?: string;
-  chaine: string;
-  categorie: Categorie;
-  art: [string, string];
-  image?: string;
-  duree: string;
-  annee: number;
-  note: number;
-  badge?: "REPLAY" | "NOUVEAU" | "EXCLUSIF";
-  progression?: number; // « Reprendre la lecture »
-}
-
-export interface ActiviteEntry {
+/** Alerte temps réel destinée à la Régie de diffusion. */
+export interface Alerte {
   id: string;
   ts: number;
-  acteur: string;
-  role: Role | "systeme";
+  heure: string; // HH:MM de l'événement
+  texte: string;
+  acquittee: boolean;
+}
+
+/** Journal tracé des modifications (audit). */
+export interface LogEntry {
+  id: string;
+  ts: number;
+  acteur: Role | "systeme";
   action: string;
-  cible: string;
 }
 
 export interface Db {
   version: number;
-  semaine: string;
   grilles: Grille[];
-  medias: MediaItem[];
-  activite: ActiviteEntry[];
+  alertes: Alerte[];
+  log: LogEntry[];
 }

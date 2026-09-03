@@ -6,27 +6,32 @@
   --font-sans: "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  /* Surfaces */
-  --color-void: #050505; /* portail public */
-  --color-night: #0b0e14; /* back-office */
-  --color-night2: #0e1220;
+  /* Surfaces (valeurs sombres par défaut — basculées en clair via [data-theme]) */
+  --color-void: #050505; /* portail public — toujours noir absolu */
+  --color-night: #0b0e14; /* fond back-office */
+  --color-night2: #111622; /* surface secondaire */
   --color-pane: #1a1f2e; /* anthracite vitré */
   --color-pane2: #202639;
   --color-pane3: #28304a;
-  --color-line: #222a3e;
-  --color-line2: #303a58;
+  --color-line: #232a3e;
+  --color-line2: #333d5c;
+
+  /* Textes sémantiques (suivent le thème) */
+  --color-ink: #f7f8fa;
+  --color-inksoft: #9ca3af;
+  --color-inkfaint: #66718a;
   --color-inkdim: #8b93a7;
 
-  /* Accents */
+  /* Accents — identiques dans les deux thèmes */
   --color-bred: #ff3d00; /* Balafon Red — live, actions, playhead */
   --color-bred2: #ff6e40;
   --color-sgreen: #00f5a0; /* Studio Green — validé, vMix OK */
   --color-gold: #ffb800; /* Warning Gold — brouillons, attente */
 
-  --shadow-glow-red: 0 0 44px -8px rgb(255 61 0 / 0.55);
-  --shadow-glow-green: 0 0 34px -10px rgb(0 245 160 / 0.5);
-  --shadow-card: 0 12px 34px -12px rgb(0 0 0 / 0.85);
-  --shadow-pop: 0 30px 80px -18px rgb(0 0 0 / 0.92);
+  --shadow-glow-red: 0 0 44px -8px rgb(255 61 0 / 0.5);
+  --shadow-glow-green: 0 0 34px -10px rgb(0 245 160 / 0.45);
+  --shadow-card: 0 12px 34px -14px rgb(0 0 0 / 0.75);
+  --shadow-pop: 0 30px 80px -18px rgb(0 0 0 / 0.9);
 
   --animate-rise: rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-fade: fadeIn 0.3s ease both;
@@ -34,7 +39,6 @@
   --animate-kenburns: kenburns 26s ease-in-out infinite alternate;
   --animate-pulse-red: pulseRed 1.6s ease-in-out infinite;
   --animate-blink-alert: blinkAlert 1.05s steps(2, start) infinite;
-  --animate-hatch: hatchMove 1.15s linear infinite;
   --animate-shimmer: shimmer 1.6s linear infinite;
   --animate-pop: pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 
@@ -61,10 +65,6 @@
   @keyframes blinkAlert {
     50% { opacity: 0.35; }
   }
-  @keyframes hatchMove {
-    from { background-position: 0 0; }
-    to { background-position: 17px 0; }
-  }
   @keyframes shimmer {
     from { background-position: -200% 0; }
     to { background-position: 200% 0; }
@@ -75,14 +75,38 @@
   }
 }
 
+/* ——— Thème clair (défaut) : seules les surfaces & textes basculent ——— */
+:root {
+  --grid-line: rgb(255 255 255 / 0.028);
+  --scroll-thumb: #2c3550;
+}
+
+[data-theme="light"] {
+  --color-night: #edf1f8;
+  --color-night2: #e4eaf4;
+  --color-pane: #ffffff;
+  --color-pane2: #f3f6fc;
+  --color-pane3: #e7edf7;
+  --color-line: #d9e0ef;
+  --color-line2: #bcc7e0;
+  --color-ink: #10151f;
+  --color-inksoft: #45516b;
+  --color-inkfaint: #7c88a3;
+  --color-inkdim: #5d6b87;
+  --shadow-card: 0 10px 30px -16px rgb(16 21 31 / 0.25);
+  --shadow-pop: 0 26px 70px -20px rgb(16 21 31 / 0.35);
+  --grid-line: rgb(16 21 31 / 0.05);
+  --scroll-thumb: #c2cbdf;
+}
+
 html {
   scroll-behavior: smooth;
 }
 
 body {
   font-family: var(--font-sans);
-  background: var(--color-void);
-  color: #e8ecf4;
+  background: var(--color-night);
+  color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -97,22 +121,34 @@ body {
   backdrop-filter: blur(18px) saturate(1.4);
   -webkit-backdrop-filter: blur(18px) saturate(1.4);
 }
+.glass-studio {
+  background: color-mix(in srgb, var(--color-night) 82%, transparent);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+}
 .glass-pane {
-  background: rgb(26 31 46 / 0.72);
+  background: color-mix(in srgb, var(--color-pane) 92%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgb(255 255 255 / 0.06);
+  border: 1px solid color-mix(in srgb, var(--color-line) 80%, transparent);
+}
+/* Surfaces volontairement sombres dans les deux thèmes (toasts, drag pill…) */
+.toast-dark {
+  background: rgb(23 28 42 / 0.96);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgb(255 255 255 / 0.08);
 }
 .bg-studio-grid {
-  background-image: linear-gradient(rgb(255 255 255 / 0.028) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 0.028) 1px, transparent 1px);
+  background-image: linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
   background-size: 42px 42px;
 }
 .bg-noise {
   background-image: radial-gradient(rgb(255 255 255 / 0.05) 1px, transparent 1.2px);
   background-size: 26px 26px;
 }
-/* Trous de grille — hachuré rouge "Programme manquant" */
+/* Trous de grille — hachuré rouge « Programme manquant » */
 .hatch-red {
   background-image: repeating-linear-gradient(
     -45deg,
@@ -120,41 +156,46 @@ body {
     rgb(255 61 0 / 0.06) 6px 12px
   );
 }
-.hatch-red-live {
-  background-image: repeating-linear-gradient(
-    -45deg,
-    rgb(255 61 0 / 0.28) 0 6px,
-    rgb(255 61 0 / 0.08) 6px 12px
-  );
-  animation: hatchMove 1.15s linear infinite;
-}
-/* Hors antenne (portail public) */
+/* Hors antenne (portail public, sur fond sombre) */
 .stripes-dark {
   background-image: repeating-linear-gradient(
     -45deg,
-    rgb(255 255 255 / 0.045) 0 8px,
+    rgb(255 255 255 / 0.05) 0 8px,
+    transparent 8px 16px
+  );
+}
+/* Hors antenne dans l'EPG — suit le thème */
+.stripes-epg {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--color-ink) 5%, transparent) 0 8px,
     transparent 8px 16px
   );
 }
 .skeleton {
-  background: linear-gradient(100deg, #1a1f2e 40%, #242c42 50%, #1a1f2e 60%);
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--color-pane) 100%, transparent) 40%,
+    color-mix(in srgb, var(--color-pane3) 100%, transparent) 50%,
+    color-mix(in srgb, var(--color-pane) 100%, transparent) 60%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.6s linear infinite;
 }
 
-/* ——— Scrollbars ——— */
+/* ——— Scrollbars (suivent le thème) ——— */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #33405f transparent;
+  scrollbar-color: var(--scroll-thumb) transparent;
 }
 *::-webkit-scrollbar {
   width: 9px;
   height: 9px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #2c3550;
+  background: var(--scroll-thumb);
   border-radius: 9px;
-  border: 2px solid #0b0e14;
+  border: 2px solid transparent;
 }
 *::-webkit-scrollbar-track {
   background: transparent;
@@ -174,4 +215,19 @@ body {
 input[type="time"]::-webkit-calendar-picker-indicator {
   filter: invert(0.65);
   cursor: pointer;
+}
+[data-theme="light"] input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: none;
+}
+
+/* ——— Accessibilité : respect de prefers-reduced-motion ——— */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

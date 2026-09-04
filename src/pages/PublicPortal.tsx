@@ -6,25 +6,19 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
-  Facebook,
   History,
-  Instagram,
-  Mail,
-  MapPin,
   Moon,
-  Phone,
   Play,
   Plus,
   Search,
-  Twitter,
   User,
-  Youtube,
 } from "lucide-react";
 import type { Programme } from "../types";
 import { IMG, PROGRAMMES } from "../data/mock";
 import { CATS, aSuivreAujourdhui, enDirectMaintenant, finBlocLabel, jourIdxAujourdhui, slotDebutMin, slotLabel, toHHMM } from "../utils/epg";
 import { useNow, useStudio } from "../state/store";
-import { LogoTV, ProgressBar, useToast } from "../components/shared";
+import { LogoBalafon, ProgressBar, useToast } from "../components/shared";
+import { PublicFooter } from "../components/PublicFooter";
 
 const REPLAYS: { prog: Programme; badge: string }[] = [
   { prog: PROGRAMMES.find((p) => p.id === "p-makossa-live")!, badge: "REPLAY" },
@@ -99,7 +93,7 @@ export function PublicPortal() {
       <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? "glass border-b border-white/[0.06]" : "bg-gradient-to-b from-black/85 to-transparent"}`}>
         <div className="max-w-[1280px] mx-auto px-5 lg:px-8 h-[68px] flex items-center gap-8">
           <Link to="/" aria-label="Accueil Balafon TV">
-            <LogoTV />
+            <LogoBalafon clair />
           </Link>
           <nav className="hidden md:flex items-center gap-7">
             <Link to="/" className="relative text-[13.5px] font-semibold text-white">
@@ -165,14 +159,15 @@ export function PublicPortal() {
 
       {/* ——— Hero : Le Boulevard du Direct ——— */}
       <section className="relative h-[90vh] min-h-[560px] overflow-hidden">
-        <div className="absolute inset-0">
+        {/* Décor du lecteur simulé — couches non interactives, empilées sous le contenu */}
+        <div className="absolute inset-0 z-[1] pointer-events-none" aria-hidden="true">
           <img src={IMG.billboard} alt="" className="w-full h-full object-cover animate-kenburns" />
           <div className="absolute inset-0 bg-gradient-to-r from-void via-void/70 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-void via-void/80 to-transparent" />
           <div className="absolute inset-0 bg-noise opacity-60" />
         </div>
 
-        <div className="relative max-w-[1280px] mx-auto px-5 lg:px-8 h-full flex flex-col justify-end pb-16">
+        <div className="relative z-[2] max-w-[1280px] mx-auto px-5 lg:px-8 h-full flex flex-col justify-end pb-16">
           <motion.div initial={{ opacity: 0, y: 26 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65, ease: "easeOut" }} className="max-w-[640px]">
             {liveMeta.enDirect ? (
               <span className="inline-flex items-center gap-2 bg-bred text-white text-[11px] font-black tracking-[0.14em] px-3 py-1.5 rounded shadow-glow-red">
@@ -370,51 +365,8 @@ export function PublicPortal() {
         </div>
       </section>
 
-      {/* ——— Footer ——— */}
-      <footer className="bg-black border-t border-white/[0.06] mt-20">
-        <div className="max-w-[1280px] mx-auto px-5 lg:px-8 pt-14 pb-8">
-          <div className="grid gap-10 md:grid-cols-[1.5fr_1fr_1fr_1.2fr]">
-            <div>
-              <LogoTV />
-              <p className="text-[13px] text-white/40 leading-relaxed mt-4 max-w-[300px]">
-                Balafon TV, la chaîne du groupe Balafon Media — information, divertissement, sport et culture, en direct de Douala.
-              </p>
-              <div className="flex gap-2 mt-5">
-                {[Facebook, Twitter, Instagram, Youtube].map((I, i) => (
-                  <button key={i} onClick={() => toast.push({ type: "info", titre: "Réseaux sociaux", message: "Retrouvez Balafon TV sur tous les réseaux." })} className="grid place-items-center w-8 h-8 rounded-full border border-white/10 text-white/50 hover:bg-bred hover:border-bred hover:text-white transition-all" aria-label="Réseau social">
-                    <I size={14} />
-                  </button>
-                ))}
-              </div>
-            </div>
-            {[
-              { t: "Navigation", items: ["Accueil", "Guide TV", "Replay", "Le direct"] },
-              { t: "Légal", items: ["Conditions d'utilisation", "Confidentialité", "Cookies", "Mentions légales"] },
-            ].map((col) => (
-              <div key={col.t}>
-                <h4 className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/30 mb-3">{col.t}</h4>
-                {col.items.map((it) => (
-                  <button key={it} onClick={() => toast.push({ type: "info", titre: it, message: "Section disponible prochainement." })} className="block text-[13px] text-white/40 hover:text-white transition-colors py-1">
-                    {it}
-                  </button>
-                ))}
-              </div>
-            ))}
-            <div>
-              <h4 className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/30 mb-3">Contact</h4>
-              <p className="flex items-center gap-2.5 text-[13px] text-white/40 py-1"><Mail size={14} className="text-bred" /> contact@balafon.cm</p>
-              <p className="flex items-center gap-2.5 text-[13px] text-white/40 py-1"><Phone size={14} className="text-bred" /> +237 6 99 00 23 23</p>
-              <p className="flex items-center gap-2.5 text-[13px] text-white/40 py-1"><MapPin size={14} className="text-bred" /> Rue Joss, Akwa — Douala</p>
-            </div>
-          </div>
-          <div className="border-t border-white/[0.06] mt-10 pt-6 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-[11.5px] text-white/30">© 2026 Balafon Media — Tous droits réservés.</p>
-            <p className="text-[11.5px] text-white/30">
-              BALAFON<span className="text-bred font-bold">+</span> Guide · conçu à Douala, Cameroun
-            </p>
-          </div>
-        </div>
-      </footer>
+      {/* ——— Footer (réseaux de diffusion + liens) ——— */}
+      <PublicFooter />
     </div>
   );
 }

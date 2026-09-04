@@ -5,8 +5,9 @@ import { ArrowRight, KeyRound, Lock, Mail, MonitorPlay, Radio, ShieldCheck } fro
 import type { Role } from "../types";
 import { DEMO_COMPTES } from "../data/mock";
 import { ROLES } from "../utils/epg";
+import { estEmailValide } from "../utils/validators";
 import { useStudio } from "../state/store";
-import { LogoTV } from "../components/shared";
+import { LogoBalafon } from "../components/shared";
 
 const ROLE_META: Record<Role, { Icon: typeof ShieldCheck; pitch: string; color: string }> = {
   admin: { Icon: ShieldCheck, pitch: "Construit la grille EPG par drag & drop et publie l'antenne.", color: "#FFB800" },
@@ -37,6 +38,12 @@ export function LoginPage() {
       setSecousse((s) => s + 1);
       return;
     }
+    /* Tous les domaines email valides sont acceptés */
+    if (!estEmailValide(email)) {
+      setErreur("Adresse email invalide.");
+      setSecousse((s) => s + 1);
+      return;
+    }
     setChargement(true);
     await new Promise((r) => setTimeout(r, 700));
     setRole(choix);
@@ -52,7 +59,7 @@ export function LoginPage() {
         <div className="absolute bottom-0 right-0 w-[380px] h-[380px] rounded-full bg-sgreen/[0.06] blur-[110px]" />
 
         <div className="relative">
-          <LogoTV />
+          <LogoBalafon clair />
         </div>
 
         <div className="relative max-w-[480px]">
@@ -94,7 +101,7 @@ export function LoginPage() {
       <main className="flex items-center justify-center px-5 py-10 bg-night2 bg-studio-grid">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="w-full max-w-[430px]">
           <div className="lg:hidden mb-8">
-            <LogoTV />
+            <LogoBalafon clair />
           </div>
 
           <p className="text-[10.5px] font-black uppercase tracking-[0.24em] text-white/35">S'authentifier</p>

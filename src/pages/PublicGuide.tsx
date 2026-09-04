@@ -7,8 +7,14 @@ import { PROGRAMMES } from "../data/mock";
 import { CATS, JOURS_LONG, TYPES, finBlocLabel, jourIdxAujourdhui, slotLabel } from "../utils/epg";
 import { useNow, useStudio } from "../state/store";
 import { TimelineJour } from "../components/EpgTimeline";
-import { LogoTV, Modale, OngletsJours, ProgressBar, useToast } from "../components/shared";
+import { LogoBalafon, Modale, OngletsJours, ProgressBar, ThemeToggle, useToast } from "../components/shared";
+import { PublicFooter } from "../components/PublicFooter";
 
+/**
+ * Guide TV public — Balafon TV uniquement.
+ * Suit le thème global (clair par défaut) : la grille reste lisible et
+ * professionnelle, le portail (hero, rails) reste cinématographique sombre.
+ */
 export function PublicGuide() {
   const { grilleAntenne } = useStudio();
   const now = useNow(30_000);
@@ -24,22 +30,23 @@ export function PublicGuide() {
   }, [jourIdx, auj]);
 
   return (
-    <div className="min-h-screen bg-void text-white">
-      {/* ——— Navbar ——— */}
-      <header className="sticky top-0 z-50 glass border-b border-white/[0.06]">
+    <div className="min-h-screen bg-night text-ink">
+      {/* ——— Navbar (suit le thème) ——— */}
+      <header className="sticky top-0 z-50 glass-studio border-b border-line">
         <div className="max-w-[1280px] mx-auto px-5 lg:px-8 h-[64px] flex items-center gap-7">
           <Link to="/" aria-label="Accueil Balafon TV">
-            <LogoTV compact />
+            <LogoBalafon compact />
           </Link>
           <nav className="hidden md:flex items-center gap-7">
-            <Link to="/" className="text-[13.5px] font-semibold text-white/55 hover:text-white transition-colors">Accueil</Link>
-            <Link to="/guide" className="relative text-[13.5px] font-semibold text-white">
+            <Link to="/" className="text-[13.5px] font-semibold text-inksoft hover:text-ink transition-colors">Accueil</Link>
+            <Link to="/guide" className="relative text-[13.5px] font-semibold text-ink">
               Guide TV
               <span className="absolute -bottom-[6px] left-0 right-0 h-[2.5px] rounded-full bg-bred" />
             </Link>
           </nav>
           <div className="flex-1" />
-          <Link to="/" className="inline-flex items-center gap-2 text-[12.5px] font-semibold text-white/50 hover:text-white transition-colors">
+          <ThemeToggle />
+          <Link to="/" className="inline-flex items-center gap-2 text-[12.5px] font-semibold text-inksoft hover:text-ink transition-colors">
             <ArrowLeft size={15} /> Retour au portail
           </Link>
         </div>
@@ -55,8 +62,8 @@ export function PublicGuide() {
               <h1 className="font-display font-black text-[36px] sm:text-[46px] tracking-tight leading-none">
                 Guide <span className="text-bred">TV</span>
               </h1>
-              <p className="text-[13px] text-white/40 mt-2.5 flex items-center gap-2">
-                <CalendarDays size={14} className="text-white/30" />
+              <p className="text-[13px] text-inkfaint mt-2.5 flex items-center gap-2">
+                <CalendarDays size={14} />
                 {JOURS_LONG[jourIdx]} {dateJour.getDate()} {dateJour.toLocaleDateString("fr-FR", { month: "long" })} — grille à la minute près, heure de Douala
               </p>
             </div>
@@ -91,14 +98,14 @@ export function PublicGuide() {
           )}
 
           {/* Légende */}
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 text-[11.5px] font-semibold text-white/45">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 text-[11.5px] font-semibold text-inksoft">
             {Object.entries(CATS).map(([k, c]) => (
               <span key={k} className="inline-flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-[3px]" style={{ background: c.color }} /> {c.label}
               </span>
             ))}
-            <span className="inline-flex items-center gap-1.5 text-white/30">
-              <span className="w-4 h-2.5 rounded stripes-dark border border-white/10" /> Hors antenne / Rediffusion
+            <span className="inline-flex items-center gap-1.5 text-inkfaint">
+              <span className="w-4 h-2.5 rounded stripes-epg border border-line" /> Hors antenne / Rediffusion
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="w-2.5 h-[3px] rounded bg-bred" /> Maintenant
@@ -106,8 +113,8 @@ export function PublicGuide() {
           </div>
         </motion.section>
 
-        <p className="flex items-center gap-2 text-[12px] text-white/30 mt-6">
-          <Info size={14} className="text-white/25" />
+        <p className="flex items-center gap-2 text-[12px] text-inkfaint mt-6">
+          <Info size={14} />
           Les plages non diffusées sont signalées « Hors antenne / Rediffusion » — plus aucun compteur de nuit vide.
           Les horaires peuvent évoluer en cas d'édition spéciale décidée en régie.
         </p>
@@ -129,20 +136,24 @@ export function PublicGuide() {
               <span className="text-[11px] font-bold px-2.5 py-1 rounded border" style={{ color: CATS[detail.prog.categorie].color, borderColor: `${CATS[detail.prog.categorie].color}45`, background: `${CATS[detail.prog.categorie].color}14` }}>
                 {CATS[detail.prog.categorie].label}
               </span>
-              <span className="text-[11px] font-bold px-2.5 py-1 rounded border border-line text-white/55 bg-pane">{TYPES[detail.prog.type]}</span>
-              <span className="font-mono text-[13px] font-bold text-white/80 tabular-nums">
+              <span className="text-[11px] font-bold px-2.5 py-1 rounded border border-line text-inksoft bg-pane2">{TYPES[detail.prog.type]}</span>
+              <span className="font-mono text-[13px] font-bold text-ink tabular-nums">
                 {slotLabel(detail.bloc.slot)} – {finBlocLabel(detail.bloc.slot, detail.prog.duree)}
               </span>
             </div>
-            <p className="text-[13.5px] text-white/60 leading-relaxed mt-4">{detail.prog.description}</p>
-            <div className="mt-6 flex gap-2.5">
+            <p className="text-[13.5px] text-inksoft leading-relaxed mt-4">{detail.prog.description}</p>
+            <div className="mt-4">
+              <ProgressBar value={35} className="h-[4px]" color="var(--color-sgreen)" />
+              <p className="font-mono text-[10.5px] text-inkfaint mt-1.5">Replay disponible après diffusion</p>
+            </div>
+            <div className="mt-5 flex gap-2.5">
               <button
                 onClick={() => toast.push({ type: "succes", titre: "Rappel programmé", message: `« ${detail.prog.titre} » à ${slotLabel(detail.bloc.slot)} — notification simulée.` })}
                 className="inline-flex items-center gap-2 bg-bred hover:bg-bred2 text-white font-bold text-[13px] px-4 py-2.5 rounded-lg shadow-glow-red transition-all active:scale-95"
               >
                 <Play size={14} fill="currentColor" /> Me le rappeler
               </button>
-              <button onClick={() => setDetail(null)} className="px-4 py-2.5 rounded-lg border border-line text-[13px] font-semibold text-white/60 hover:bg-pane2 transition-colors">
+              <button onClick={() => setDetail(null)} className="px-4 py-2.5 rounded-lg border border-line text-[13px] font-semibold text-inksoft hover:bg-pane2 transition-colors">
                 Fermer
               </button>
             </div>
@@ -150,13 +161,7 @@ export function PublicGuide() {
         )}
       </Modale>
 
-      <footer className="bg-black border-t border-white/[0.06] py-6">
-        <div className="max-w-[1280px] mx-auto px-5 lg:px-8 flex flex-wrap items-center justify-between gap-3">
-          <LogoTV compact />
-          <p className="text-[11.5px] text-white/30">© 2026 Balafon Media — Guide des programmes Balafon TV</p>
-        </div>
-      </footer>
-
+      <PublicFooter />
     </div>
   );
 }

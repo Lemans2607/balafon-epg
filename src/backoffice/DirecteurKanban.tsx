@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
@@ -10,14 +11,14 @@ import {
   Radio,
   ScrollText,
   ShieldCheck,
+  Users,
 } from "lucide-react";
 import type { Grille, StatutGrille } from "../types";
 import { PROGRAMMES } from "../data/mock";
 import { JOURS_COURT, ilYa, trousGrille } from "../utils/epg";
 import { useStudio } from "../state/store";
-import { ConfirmModal, Modale, RoleChip, StatutChip, useToast } from "../components/shared";
+import { ConfirmModal, Modale, OngletsJours, RoleChip, StatutChip, useToast } from "../components/shared";
 import { TimelineJour, etatJour } from "../components/EpgTimeline";
-import { OngletsJours } from "../components/shared";
 
 const COLONNES: { key: StatutGrille; titre: string; desc: string; dot: string }[] = [
   { key: "brouillon", titre: "Brouillons", desc: "En construction chez l'Admin", dot: "bg-gold" },
@@ -56,12 +57,21 @@ export function DirecteurKanban() {
 
   return (
     <div className="px-5 sm:px-7 py-7 max-w-[1400px] mx-auto">
-      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: "easeOut" }} className="mb-6">
-        <p className="text-[10.5px] font-black uppercase tracking-[0.24em] text-sgreen">Vue Directeur d'Antenne</p>
-        <h1 className="font-display font-extrabold text-[26px] tracking-tight mt-1.5">Validation Éditoriale</h1>
-        <p className="text-[12.5px] text-white/40 mt-1">
-          Arbitrez les grilles soumises — la validation passe la grille à l'antenne et notifie la Régie.
-        </p>
+      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: "easeOut" }} className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[10.5px] font-black uppercase tracking-[0.24em] text-sgreen">Vue Directeur d'Antenne</p>
+          <h1 className="font-display font-extrabold text-[26px] tracking-tight mt-1.5">Validation Éditoriale</h1>
+          <p className="text-[12.5px] text-inkfaint mt-1">
+            Arbitrez les grilles soumises — la validation passe la grille à l'antenne et notifie la Régie.
+          </p>
+        </div>
+        {/* Accès rapide aux comptes backend (espace Directeur) */}
+        <Link
+          to="/studio/comptes"
+          className="inline-flex items-center gap-2 rounded-lg bg-pane border border-line hover:border-sgreen/50 px-4 py-2.5 text-[13px] font-bold text-inksoft hover:text-ink transition-colors"
+        >
+          <Users size={15} className="text-sgreen" /> Comptes Studio
+        </Link>
       </motion.div>
 
       {/* ——— Kanban ——— */}
@@ -80,9 +90,9 @@ export function DirecteurKanban() {
                 <span className={`w-2 h-2 rounded-full flex-none ${col.dot}`} />
                 <div className="min-w-0 flex-1">
                   <h2 className="font-display font-bold text-[13.5px] tracking-tight">{col.titre}</h2>
-                  <p className="text-[10px] text-white/30">{col.desc}</p>
+                  <p className="text-[10px] text-inkfaint">{col.desc}</p>
                 </div>
-                <span className="font-mono text-[11px] font-bold text-white/45 bg-night border border-line rounded-full px-2 py-0.5 tabular-nums">
+                <span className="font-mono text-[11px] font-bold text-inksoft bg-night border border-line rounded-full px-2 py-0.5 tabular-nums">
                   {cartes.length}
                 </span>
               </header>
@@ -111,17 +121,17 @@ export function DirecteurKanban() {
                           } ${g.antenne ? "ring-1 ring-sgreen/40" : ""}`}
                         >
                           <div className="flex items-start justify-between gap-2">
-                            <h3 className="font-display font-bold text-[14.5px] tracking-tight leading-snug group-hover:text-white">{g.nom}</h3>
+                            <h3 className="font-display font-bold text-[14.5px] tracking-tight leading-snug">{g.nom}</h3>
                             {g.antenne && (
                               <span className="flex-none inline-flex items-center gap-1 text-[9px] font-black text-sgreen bg-sgreen/10 border border-sgreen/30 rounded px-1.5 py-0.5">
                                 <Radio size={9} /> ANTENNE
                               </span>
                             )}
                           </div>
-                          <p className="text-[11px] text-white/40 mt-1">{g.semaine}</p>
+                          <p className="text-[11px] text-inkfaint mt-1">{g.semaine}</p>
 
                           <div className="flex items-center gap-3 mt-3 flex-wrap">
-                            <span className="font-mono text-[10.5px] font-bold text-white/55 tabular-nums">
+                            <span className="font-mono text-[10.5px] font-bold text-inksoft tabular-nums">
                               {g.jours.reduce((s, j) => s + j.length, 0)} programmes
                             </span>
                             {g.statut !== "validee" && (
@@ -129,7 +139,7 @@ export function DirecteurKanban() {
                                 {trous > 0 ? `${trous} trous` : "complète"}
                               </span>
                             )}
-                            <span className="text-[10.5px] text-white/30 ml-auto">{ilYa(g.majLe)}</span>
+                            <span className="text-[10.5px] text-inkfaint ml-auto">{ilYa(g.majLe)}</span>
                           </div>
 
                           {/* Mini-états des jours */}
@@ -141,7 +151,7 @@ export function DirecteurKanban() {
                                   key={i}
                                   title={`${JOURS_COURT[i]} — ${e}`}
                                   className={`flex-1 h-[5px] rounded-full ${
-                                    e === "complet" ? "bg-sgreen/70" : e === "trous" ? "bg-bred/80" : "bg-white/[0.08]"
+                                    e === "complet" ? "bg-sgreen/70" : e === "trous" ? "bg-bred/80" : "bg-line2/60"
                                   }`}
                                 />
                               );
@@ -153,7 +163,7 @@ export function DirecteurKanban() {
                   })}
                 </AnimatePresence>
                 {cartes.length === 0 && (
-                  <li className="text-center text-[12px] text-white/25 py-10 border border-dashed border-line rounded-xl">
+                  <li className="text-center text-[12px] text-inkfaint py-10 border border-dashed border-line rounded-xl">
                     Aucune grille {col.key === "brouillon" ? "en brouillon" : col.key === "en_attente" ? "en attente" : "validée"}.
                   </li>
                 )}
@@ -165,27 +175,27 @@ export function DirecteurKanban() {
 
       {/* ——— Journal des modifications ——— */}
       <motion.section initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }} className="mt-8 glass-pane rounded-xl overflow-hidden">
-        <header className="px-5 py-3.5 border-b border-white/[0.06] flex items-center gap-2.5">
+        <header className="px-5 py-3.5 border-b border-line flex items-center gap-2.5">
           <ScrollText size={16} className="text-gold" />
           <h2 className="font-display font-bold text-[14px] tracking-tight">Journal des modifications</h2>
-          <span className="text-[10.5px] text-white/30 ml-auto font-mono">{db.log.length} entrées · traçabilité complète</span>
+          <span className="text-[10.5px] text-inkfaint ml-auto font-mono">{db.log.length} entrées · traçabilité complète</span>
         </header>
         <ul className="max-h-[300px] overflow-y-auto p-2">
           {db.log.map((l) => {
             const Icon = l.acteur === "directeur" ? Clapperboard : l.acteur === "admin" ? Pencil : l.acteur === "regie" ? Radio : History;
-            const couleur = l.acteur === "directeur" ? "text-sgreen" : l.acteur === "admin" ? "text-gold" : l.acteur === "regie" ? "text-bred" : "text-white/35";
+            const couleur = l.acteur === "directeur" ? "text-sgreen" : l.acteur === "admin" ? "text-gold" : l.acteur === "regie" ? "text-bred" : "text-inkfaint";
             return (
-              <li key={l.id} className="flex items-start gap-3 rounded-lg px-3 py-2.5 hover:bg-white/[0.03] transition-colors">
+              <li key={l.id} className="flex items-start gap-3 rounded-lg px-3 py-2.5 hover:bg-pane2 transition-colors">
                 <span className={`grid place-items-center w-8 h-8 rounded-lg bg-night border border-line flex-none ${couleur}`}>
                   <Icon size={14} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[12.5px] leading-snug text-white/75">{l.action}</p>
-                  <p className="font-mono text-[10px] text-white/25 mt-0.5">{ilYa(l.ts)}</p>
+                  <p className="text-[12.5px] leading-snug text-inksoft">{l.action}</p>
+                  <p className="font-mono text-[10px] text-inkfaint mt-0.5">{ilYa(l.ts)}</p>
                 </div>
                 <span className="flex-none">
                   {l.acteur === "systeme" ? (
-                    <span className="text-[10px] font-bold text-white/30 border border-line rounded px-1.5 py-0.5">Système</span>
+                    <span className="text-[10px] font-bold text-inkfaint border border-line rounded px-1.5 py-0.5">Système</span>
                   ) : (
                     <RoleChip role={l.acteur} />
                   )}
@@ -242,7 +252,7 @@ export function DirecteurKanban() {
                   </button>
                 )}
                 {selection.statut === "brouillon" && (
-                  <p className="text-[12px] text-white/40">En construction chez l'Administrateur — sera soumise prochainement.</p>
+                  <p className="text-[12px] text-inkfaint">En construction chez l'Administrateur — sera soumise prochainement.</p>
                 )}
               </div>
             </div>
@@ -256,11 +266,11 @@ export function DirecteurKanban() {
                 const e = etatJour(j);
                 return (
                   <div key={i} className={`rounded-lg border px-1.5 py-2.5 text-center ${e === "complet" ? "border-sgreen/30 bg-sgreen/[0.05]" : e === "trous" ? "border-bred/35 bg-bred/[0.06]" : "border-line bg-night2"}`}>
-                    <p className="text-[10px] font-bold text-white/50">{JOURS_COURT[i]}</p>
-                    <p className={`font-mono text-[12px] font-bold tabular-nums mt-1 ${e === "complet" ? "text-sgreen" : e === "trous" ? "text-bred" : "text-white/30"}`}>
+                    <p className="text-[10px] font-bold text-inksoft">{JOURS_COURT[i]}</p>
+                    <p className={`font-mono text-[12px] font-bold tabular-nums mt-1 ${e === "complet" ? "text-sgreen" : e === "trous" ? "text-bred" : "text-inkfaint"}`}>
                       {j.length}
                     </p>
-                    <p className="text-[8px] uppercase font-bold tracking-wide text-white/25">{e === "complet" ? "complet" : e === "trous" ? "trous" : "vide"}</p>
+                    <p className="text-[8px] uppercase font-bold tracking-wide text-inkfaint">{e === "complet" ? "complet" : e === "trous" ? "trous" : "vide"}</p>
                   </div>
                 );
               })}
@@ -271,8 +281,8 @@ export function DirecteurKanban() {
                   const p = PROGRAMMES.find((x) => x.id === b.programmeId);
                   return p ? (
                     <li key={`${i}-${b.id}`} className="flex items-center gap-3 rounded-lg bg-night2 border border-line px-3 py-2">
-                      <span className="text-[9.5px] font-bold text-white/35 w-8 flex-none">{JOURS_COURT[i]}</span>
-                      <span className="font-mono text-[11px] font-bold text-white/60 w-[92px] flex-none tabular-nums">
+                      <span className="text-[9.5px] font-bold text-inkfaint w-8 flex-none">{JOURS_COURT[i]}</span>
+                      <span className="font-mono text-[11px] font-bold text-inksoft w-[92px] flex-none tabular-nums">
                         {`${String(6 + Math.floor((b.slot * 30) / 60)).padStart(2, "0")}:${String((b.slot * 30) % 60).padStart(2, "0")}`}
                       </span>
                       <span className="text-[12.5px] font-semibold truncate flex-1">{p.titre}</span>
@@ -292,7 +302,7 @@ export function DirecteurKanban() {
         titre="Attention — grille déjà validée"
         message={
           <>
-            <span className="font-bold text-white">Cette modification déclenchera une alerte temps réel à la Régie de diffusion.</span>
+            <span className="font-bold text-ink">Cette modification déclenchera une alerte temps réel à la Régie de diffusion.</span>
             <span className="block mt-2">
               « {avertir?.nom} » est actuellement à l'antenne : chaque changement sera journalisé et poussé instantanément vers la console
               d'alertes de la Régie pour action dans vMix.
@@ -329,13 +339,12 @@ export function DirecteurKanban() {
               <OngletsJours actif={jourEd} onChange={setJourEd} etats={editer.jours.map((j) => etatJour(j))} />
             </div>
             <TimelineJour grilleId={editer.id} jourIdx={jourEd} mode="edit" acteur="directeur" />
-            <p className="mt-3 text-[11px] text-white/35 flex items-center gap-2">
+            <p className="mt-3 text-[11px] text-inkfaint flex items-center gap-2">
               <ShieldCheck size={13} className="text-sgreen" /> Fin de la double saisie : la Régie lit directement ce miroir, aucune ressaisie de sa part.
             </p>
           </>
         )}
       </Modale>
-
     </div>
   );
 }
